@@ -13,6 +13,14 @@ on:
 permissions:
   contents: read
 
+env:
+  ACR_LOGIN_SERVER: acrtechbanks7brazilsouth.azurecr.io
+  ACR_NAME: acrtechbanks7brazilsouth
+  RESOURCE_GROUP: rg-techbank-brazilsouth
+  CONTAINER_APP_NAME: ca-techbank-s7-qa
+  CONTAINER_APP_ENV: cae-techbank-s7-qa
+  PIPELINE_VERSION: v1.1.0
+
 jobs:
   quality:
     name: Quality Gate
@@ -71,7 +79,7 @@ jobs:
             -e APP_VERSION=${{ steps.meta.outputs.app_version }} \
             -e GIT_SHA=${{ steps.meta.outputs.git_sha }} \
             -e BUILD_TIME=${{ steps.meta.outputs.build_time }} \
-            -e PIPELINE_VERSION=v1.0.0 \
+            -e PIPELINE_VERSION=${{ env.PIPELINE_VERSION }} \
             -e APP_ENV=ci \
             -e CONTAINER_IMAGE=${{ steps.meta.outputs.image_name }} \
             -p 3000:3000 \
@@ -136,7 +144,7 @@ jobs:
           echo "Response: $BODY"
           echo "$BODY" | grep -q '"appVersion":"${{ steps.meta.outputs.app_version }}"'
           echo "$BODY" | grep -q '"gitSha":"${{ steps.meta.outputs.git_sha }}"'
-          echo "$BODY" | grep -q '"pipelineVersion":"v1.0.0"'
+          echo "$BODY" | grep -q '"pipelineVersion":"${{ env.PIPELINE_VERSION }}"'
           echo "$BODY" | grep -q '"environment":"ci"'
 
       - name: Smoke test /api/releases
@@ -145,7 +153,7 @@ jobs:
           echo "Response: $BODY"
           echo "$BODY" | grep -q '"appVersion":"${{ steps.meta.outputs.app_version }}"'
           echo "$BODY" | grep -q '"gitSha":"${{ steps.meta.outputs.git_sha }}"'
-          echo "$BODY" | grep -q '"pipelineVersion":"v1.0.0"'
+          echo "$BODY" | grep -q '"pipelineVersion":"${{ env.PIPELINE_VERSION }}"'
           echo "$BODY" | grep -q '"environment":"ci"'
           echo "$BODY" | grep -q '"containerImage":"${{ steps.meta.outputs.image_name }}"'
           echo "$BODY" | grep -q '"releaseStatus":"CI Validation"'
@@ -171,3 +179,194 @@ jobs:
         run: |
           docker stop techbank-ci || true
           docker rm techbank-ci || true
+
+  deploy-qa:
+    name: Deploy QA — Azure Container Apps
+    runs-on: ubuntu-latest
+    needs: docker
+    # Only deploy on push to develop (not on pull_request)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Generate build metadata
+        id: meta
+        run: |
+          RAW_VER=$(tr -d '\r\n' < VERSION)
+          echo "app_version=v${RAW_VER}" >> $GITHUB_OUTPUT
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+          echo "git_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "acr_image=${{ env.ACR_LOGIN_SERVER }}/techbank:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push image to ACR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/techbank:${{ github.sha }}
+            ${{ env.ACR_LOGIN_SERVER }}/techbank:latest
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Container Apps extension
+        run: az extension add --name containerapp --upgrade --allow-preview true -y
+
+      - name: Verify QA deployment prerequisites
+        run: |
+          az acr show --name ${{ env.ACR_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --query name -o tsv
+          az containerapp env show \
+            --name ${{ env.CONTAINER_APP_ENV }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query name -o tsv
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          # Check if Container App exists; create or update
+          if az containerapp show \
+               --name ${{ env.CONTAINER_APP_NAME }} \
+               --resource-group ${{ env.RESOURCE_GROUP }} \
+               --query name -o tsv 2>/dev/null; then
+            echo "Container App exists — updating image..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ steps.meta.outputs.acr_image }} \
+              --set-env-vars \
+                APP_VERSION=${{ steps.meta.outputs.app_version }} \
+                GIT_SHA=${{ steps.meta.outputs.git_sha }} \
+                BUILD_TIME=${{ steps.meta.outputs.build_time }} \
+                PIPELINE_VERSION=${{ env.PIPELINE_VERSION }} \
+                APP_ENV=qa \
+                CONTAINER_IMAGE=${{ steps.meta.outputs.acr_image }}
+          else
+            echo "Container App does not exist — creating..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_APP_ENV }} \
+              --image ${{ steps.meta.outputs.acr_image }} \
+              --registry-server ${{ env.ACR_LOGIN_SERVER }} \
+              --registry-username ${{ secrets.ACR_USERNAME }} \
+              --registry-password ${{ secrets.ACR_PASSWORD }} \
+              --target-port 3000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --env-vars \
+                APP_VERSION=${{ steps.meta.outputs.app_version }} \
+                GIT_SHA=${{ steps.meta.outputs.git_sha }} \
+                BUILD_TIME=${{ steps.meta.outputs.build_time }} \
+                PIPELINE_VERSION=${{ env.PIPELINE_VERSION }} \
+                APP_ENV=qa \
+                CONTAINER_IMAGE=${{ steps.meta.outputs.acr_image }}
+          fi
+
+      - name: Get QA URL
+        id: qa-url
+        run: |
+          FQDN=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
+          echo "QA URL: https://$FQDN"
+
+      - name: Wait for QA deployment to be ready
+        run: |
+          echo "Waiting for QA endpoint to become available..."
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          ATTEMPTS=0
+          MAX_ATTEMPTS=30
+          DELAY=10
+
+          until [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$QA_URL/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "QA endpoint responding after $((ATTEMPTS * DELAY)) seconds"
+              break
+            fi
+            ATTEMPTS=$((ATTEMPTS + 1))
+            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS — HTTP $STATUS — retrying in ${DELAY}s..."
+            sleep $DELAY
+          done
+
+          if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+            echo "QA endpoint did not respond within timeout"
+            exit 1
+          fi
+
+      - name: Remote smoke test /health
+        run: |
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          BODY=$(curl -sf "$QA_URL/health")
+          echo "Response: $BODY"
+          echo "$BODY" | grep -q '"status":"ok"'
+
+      - name: Remote smoke test /ready
+        run: |
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          BODY=$(curl -sf "$QA_URL/ready")
+          echo "Response: $BODY"
+          echo "$BODY" | grep -q '"status":"ready"'
+
+      - name: Remote smoke test /api/version
+        run: |
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          BODY=$(curl -sf "$QA_URL/api/version")
+          echo "Response: $BODY"
+          echo "$BODY" | grep -q '"environment":"qa"'
+          echo "$BODY" | grep -q '"pipelineVersion":"${{ env.PIPELINE_VERSION }}"'
+          echo "$BODY" | grep -q '"gitSha":"${{ steps.meta.outputs.git_sha }}"'
+
+      - name: Remote smoke test /api/releases
+        run: |
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          BODY=$(curl -sf "$QA_URL/api/releases")
+          echo "Response: $BODY"
+          echo "$BODY" | grep -q '"environment":"qa"'
+          echo "$BODY" | grep -q '"releaseStatus":"QA Environment"'
+          echo "$BODY" | grep -q '"containerImage":"${{ steps.meta.outputs.acr_image }}"'
+
+      - name: Remote smoke test / (SPA HTML)
+        run: |
+          QA_URL="https://${{ steps.qa-url.outputs.fqdn }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$QA_URL/")
+          echo "GET / returned HTTP $STATUS"
+          [ "$STATUS" = "200" ]
+
+      - name: Print QA deployment summary
+        run: |
+          echo "=========================================="
+          echo "QA Deployment Successful"
+          echo "=========================================="
+          echo "URL:        https://${{ steps.qa-url.outputs.fqdn }}"
+          echo "Image:      ${{ steps.meta.outputs.acr_image }}"
+          echo "SHA:        ${{ steps.meta.outputs.git_sha }}"
+          echo "Version:    ${{ steps.meta.outputs.app_version }}"
+          echo "Pipeline:   ${{ env.PIPELINE_VERSION }}"
+          echo "=========================================="
+
+          {
+            echo "## TechBank QA deployment"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| URL | https://${{ steps.qa-url.outputs.fqdn }} |"
+            echo "| Image | \`${{ steps.meta.outputs.acr_image }}\` |"
+            echo "| Commit | \`${{ steps.meta.outputs.git_sha }}\` |"
+            echo "| Application version | ${{ steps.meta.outputs.app_version }} |"
+            echo "| Pipeline version | ${{ env.PIPELINE_VERSION }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
