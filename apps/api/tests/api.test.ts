@@ -19,10 +19,10 @@ describe('TechBank API', () => {
     const response = await request(app).get('/api/version');
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
-      appVersion: expect.any(String),
+      appVersion: 'v1.0.0',
       gitSha: expect.any(String),
       buildTime: expect.any(String),
-      pipelineVersion: expect.any(String),
+      pipelineVersion: 'v1.0.0',
       environment: expect.any(String),
     });
   });
@@ -45,18 +45,20 @@ describe('TechBank API', () => {
     });
   });
 
-  it('GET /api/releases returns release metadata', async () => {
+  it('GET /api/releases returns release metadata with explicit containerImage status', async () => {
     const response = await request(app).get('/api/releases');
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
-      appVersion: expect.any(String),
+      appVersion: 'v1.0.0',
       gitSha: expect.any(String),
       buildTime: expect.any(String),
-      pipelineVersion: expect.any(String),
+      pipelineVersion: 'v1.0.0',
       environment: expect.any(String),
       containerImage: expect.any(String),
       releaseStatus: expect.any(String),
     });
+    // Defaults to not-built when CONTAINER_IMAGE env var is not set in local dev
+    expect(response.body.containerImage).toBe(process.env.CONTAINER_IMAGE ?? 'not-built');
   });
 
   it('GET /api/not-found returns 404 JSON and does not return HTML', async () => {
