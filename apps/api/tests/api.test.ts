@@ -44,4 +44,55 @@ describe('TechBank API', () => {
       riskAlerts: expect.any(Number),
     });
   });
+
+  it('GET /api/releases returns release metadata', async () => {
+    const response = await request(app).get('/api/releases');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      appVersion: expect.any(String),
+      gitSha: expect.any(String),
+      buildTime: expect.any(String),
+      pipelineVersion: expect.any(String),
+      environment: expect.any(String),
+      containerImage: expect.any(String),
+      releaseStatus: expect.any(String),
+    });
+  });
+
+  it('GET /api/not-found returns 404 JSON and does not return HTML', async () => {
+    const response = await request(app).get('/api/not-found');
+    expect(response.status).toBe(404);
+    expect(response.headers['content-type']).toMatch(/json/);
+    expect(response.body).toEqual({
+      error: 'Route not found',
+      path: '/api/not-found',
+    });
+  });
+
+  it('GET / serves SPA index.html', async () => {
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toMatch(/html/);
+    expect(response.text).toContain('TechBank Operations Center');
+  });
+
+  it('GET /risk serves SPA index.html via fallback routing', async () => {
+    const response = await request(app).get('/risk');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toMatch(/html/);
+    expect(response.text).toContain('TechBank Operations Center');
+  });
+
+  it('GET /services serves SPA index.html via fallback routing', async () => {
+    const response = await request(app).get('/services');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toMatch(/html/);
+    expect(response.text).toContain('TechBank Operations Center');
+  });
+
+  it('POST /unknown returns 404 JSON and does not serve SPA HTML', async () => {
+    const response = await request(app).post('/unknown');
+    expect(response.status).toBe(404);
+    expect(response.headers['content-type']).toMatch(/json/);
+  });
 });

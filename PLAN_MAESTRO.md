@@ -1,4 +1,5 @@
 # IT for Banking — Laboratorio 07
+
 ## Plan maestro end-to-end: TechBank DevSecOps Cloud Platform
 
 > **Objetivo de este documento:** servir como guía de ejecución completa para construir, desplegar, demostrar, documentar y exponer el Laboratorio 07 de IT for Banking con un nivel superior al mínimo solicitado, sin desviarse del objetivo académico.
@@ -176,35 +177,35 @@ No se usará PII, cuentas reales, tarjetas reales, nombres reales ni informació
 
 # 5. Stack tecnológico definitivo
 
-| Área | Tecnología |
-|---|---|
-| Frontend | React + TypeScript + Vite |
-| UI | CSS/Tailwind o CSS Modules |
-| Gráficas | Recharts |
-| Backend | Node.js 24 LTS + TypeScript + Express |
-| API | REST |
-| Tests | Vitest/Jest + Supertest |
-| Lint | ESLint |
-| Formato | Prettier |
-| Versionamiento | Git + GitHub |
-| Branching | main / develop / feature/* |
-| CI/CD | GitHub Actions |
-| Contenedores | Docker multi-stage |
-| Registro | Azure Container Registry |
-| Runtime | Azure Container Apps |
-| IaC | Azure Bicep |
-| CI → Azure | GitHub OIDC + Microsoft Entra ID |
-| Runtime → ACR | Managed Identity + AcrPull |
-| Observabilidad | Azure Monitor + Application Insights + Log Analytics |
-| Seguridad código | GitHub CodeQL |
-| Secret scanning | Gitleaks |
-| Dependency scan | npm audit / Dependabot |
-| Container scan | Trivy |
-| SBOM | Syft o CycloneDX |
-| Carga | k6 |
-| Versionado | Semantic Versioning |
-| Estrategia release | Canary + rollback |
-| Entorno | QA |
+| Área               | Tecnología                                           |
+| ------------------ | ---------------------------------------------------- |
+| Frontend           | React + TypeScript + Vite                            |
+| UI                 | CSS/Tailwind o CSS Modules                           |
+| Gráficas           | Recharts                                             |
+| Backend            | Node.js 24 LTS + TypeScript + Express                |
+| API                | REST                                                 |
+| Tests              | Vitest/Jest + Supertest                              |
+| Lint               | ESLint                                               |
+| Formato            | Prettier                                             |
+| Versionamiento     | Git + GitHub                                         |
+| Branching          | main / develop / feature/*                           |
+| CI/CD              | GitHub Actions                                       |
+| Contenedores       | Docker multi-stage                                   |
+| Registro           | Azure Container Registry                             |
+| Runtime            | Azure Container Apps                                 |
+| IaC                | Azure Bicep                                          |
+| CI → Azure         | GitHub OIDC + Microsoft Entra ID                     |
+| Runtime → ACR      | Managed Identity + AcrPull                           |
+| Observabilidad     | Azure Monitor + Application Insights + Log Analytics |
+| Seguridad código   | GitHub CodeQL                                        |
+| Secret scanning    | Gitleaks                                             |
+| Dependency scan    | npm audit / Dependabot                               |
+| Container scan     | Trivy                                                |
+| SBOM               | Syft o CycloneDX                                     |
+| Carga              | k6                                                   |
+| Versionado         | Semantic Versioning                                  |
+| Estrategia release | Canary + rollback                                    |
+| Entorno            | QA                                                   |
 
 ---
 
@@ -1805,12 +1806,12 @@ export const options = {
     { duration: '30s', target: 20 },
     { duration: '60s', target: 50 },
     { duration: '60s', target: 100 },
-    { duration: '30s', target: 0 }
+    { duration: '30s', target: 0 },
   ],
   thresholds: {
     http_req_failed: ['rate<0.01'],
-    http_req_duration: ['p(95)<500']
-  }
+    http_req_duration: ['p(95)<500'],
+  },
 };
 ```
 
@@ -1904,22 +1905,26 @@ Ejemplo:
 # Pipeline Changelog
 
 ## v1.0.0
+
 - CI inicial.
 - Install, build y tests.
 - Docker build.
 
 ## v1.1.0
+
 - CodeQL.
 - Gitleaks.
 - Trivy.
 - SBOM.
 
 ## v1.2.0
+
 - Azure OIDC.
 - Deploy QA.
 - Smoke tests.
 
 ## v1.3.0
+
 - Canary.
 - Rollback.
 - k6 validation.
@@ -2039,9 +2044,11 @@ La finalidad es demostrar mantenimiento continuo.
 
 ```md
 ## Change
+
 Describe the change.
 
 ## Type
+
 - [ ] Feature
 - [ ] Fix
 - [ ] CI/CD
@@ -2049,15 +2056,18 @@ Describe the change.
 - [ ] Documentation
 
 ## Validation
+
 - [ ] Lint
 - [ ] Tests
 - [ ] Docker
 - [ ] Security checks
 
 ## Risk
+
 Describe potential impact.
 
 ## Evidence
+
 Attach screenshot if applicable.
 ```
 
@@ -2877,42 +2887,42 @@ Antes:
 
 # 63. Checklist de auditoría final contra el laboratorio
 
-| Requisito | Evidencia |
-|---|---|
-| Repositorio Git | URL GitHub |
-| main | Branch |
-| develop | Branch |
-| feature/test | Branch |
-| Commit | Git history |
-| Push | GitHub history |
-| PR | Pull Request |
-| Merge | PR merged |
-| Pipeline YAML | `.github/workflows/ci-cd.yml` |
-| Evento automático | Actions run |
-| Tests | CI job |
-| Docker | CI + local |
-| QA | Azure Container Apps |
-| Navegador/curl | URL + screenshot |
-| Health check | `/health` |
-| Versionar YAML | Git history |
-| SemVer | Tags |
-| `feat:` / `fix:` | Commits |
-| revisión por PR | GitHub PR |
-| CPU | Azure metric |
-| Memoria | Azure metric |
-| Latencia | k6/App Insights |
-| Vertical | análisis |
-| Horizontal | ACA replicas |
-| Balanceo | ingress/revisions |
-| Autoscaling | scale rule |
-| k6 | test report |
-| Informe 1–2 páginas | PDF/MD |
-| Trazabilidad avanzada | SHA/version UI |
-| DevSecOps | Security gates |
-| IaC | Bicep |
-| Observabilidad | App Insights/Logs |
-| Canary | traffic split |
-| Rollback | evidencia |
+| Requisito             | Evidencia                     |
+| --------------------- | ----------------------------- |
+| Repositorio Git       | URL GitHub                    |
+| main                  | Branch                        |
+| develop               | Branch                        |
+| feature/test          | Branch                        |
+| Commit                | Git history                   |
+| Push                  | GitHub history                |
+| PR                    | Pull Request                  |
+| Merge                 | PR merged                     |
+| Pipeline YAML         | `.github/workflows/ci-cd.yml` |
+| Evento automático     | Actions run                   |
+| Tests                 | CI job                        |
+| Docker                | CI + local                    |
+| QA                    | Azure Container Apps          |
+| Navegador/curl        | URL + screenshot              |
+| Health check          | `/health`                     |
+| Versionar YAML        | Git history                   |
+| SemVer                | Tags                          |
+| `feat:` / `fix:`      | Commits                       |
+| revisión por PR       | GitHub PR                     |
+| CPU                   | Azure metric                  |
+| Memoria               | Azure metric                  |
+| Latencia              | k6/App Insights               |
+| Vertical              | análisis                      |
+| Horizontal            | ACA replicas                  |
+| Balanceo              | ingress/revisions             |
+| Autoscaling           | scale rule                    |
+| k6                    | test report                   |
+| Informe 1–2 páginas   | PDF/MD                        |
+| Trazabilidad avanzada | SHA/version UI                |
+| DevSecOps             | Security gates                |
+| IaC                   | Bicep                         |
+| Observabilidad        | App Insights/Logs             |
+| Canary                | traffic split                 |
+| Rollback              | evidencia                     |
 
 Si una fila obligatoria no tiene evidencia, el laboratorio no está listo.
 
