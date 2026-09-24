@@ -10,6 +10,7 @@ export function Releases() {
   if (loading) return <LoadingState rows={6} />;
   if (error) return <ErrorState message={error} />;
   if (!data) return null;
+
   const fields = [
     { label: 'Environment', value: data.environment.toUpperCase(), icon: Layers3 },
     { label: 'Application', value: data.appVersion, icon: Code2 },
@@ -18,6 +19,36 @@ export function Releases() {
     { label: 'Build', value: data.buildTime, icon: Clock3 },
     { label: 'Container image', value: data.containerImage, icon: Box },
   ];
+
+  const envTitles: Record<string, { eyebrow: string; subtitle: string; postureTitle: string }> = {
+    local: {
+      eyebrow: 'Current local release',
+      subtitle: 'Build metadata prepared for end-to-end traceability in later delivery phases.',
+      postureTitle: 'Local foundation ready',
+    },
+    container: {
+      eyebrow: 'Current container release',
+      subtitle: 'Runtime build metadata served from production container execution environment.',
+      postureTitle: 'Container runtime ready',
+    },
+    ci: {
+      eyebrow: 'CI validation release',
+      subtitle: 'Automated build and smoke test metadata verified during CI pipeline execution.',
+      postureTitle: 'CI pipeline validation active',
+    },
+    qa: {
+      eyebrow: 'QA environment release',
+      subtitle: 'Release candidate build metadata deployed for quality assurance validation.',
+      postureTitle: 'QA environment active',
+    },
+  };
+
+  const meta = envTitles[data.environment] ?? {
+    eyebrow: 'Current release',
+    subtitle: `Runtime build metadata for ${data.environment.toUpperCase()} environment.`,
+    postureTitle: `${data.environment.toUpperCase()} environment ready`,
+  };
+
   return (
     <div className="page-stack">
       <section className="release-hero">
@@ -25,9 +56,9 @@ export function Releases() {
           <div className="release-icon">
             <Layers3 size={28} />
           </div>
-          <span className="eyebrow">Current local release</span>
+          <span className="eyebrow">{meta.eyebrow}</span>
           <h2>{data.appVersion}</h2>
-          <p>Build metadata prepared for end-to-end traceability in later delivery phases.</p>
+          <p>{meta.subtitle}</p>
         </div>
         <StatusBadge tone="info">{data.releaseStatus}</StatusBadge>
       </section>
@@ -45,10 +76,20 @@ export function Releases() {
       <article className="panel roadmap-card">
         <div>
           <span className="panel-kicker">Release posture</span>
-          <h3>Local foundation ready</h3>
+          <h3>{meta.postureTitle}</h3>
           <p>
-            La aplicación ya separa versión, commit, build y versión del pipeline. La imagen de
-            contenedor permanece correctamente marcada como <code>not-built</code> en esta fase.
+            {data.containerImage === 'not-built' ? (
+              <>
+                La aplicación ya separa versión, commit, build y versión del pipeline. La imagen de
+                contenedor permanece correctamente marcada como <code>not-built</code> en esta fase
+                local.
+              </>
+            ) : (
+              <>
+                La aplicación se está ejecutando desde la imagen de contenedor{' '}
+                <code>{data.containerImage}</code> en entorno {data.environment}.
+              </>
+            )}
           </p>
         </div>
         <div className="readiness-list">

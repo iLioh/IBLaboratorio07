@@ -32,11 +32,17 @@ const formatCompact = (value: number) =>
 export function Dashboard() {
   const metrics = useApi(api.getMetrics);
   const transactions = useApi(api.getTransactions);
+  const health = useApi(api.health);
+  const readiness = useApi(api.readiness);
+  const version = useApi(api.getVersion);
 
   if (metrics.loading || transactions.loading) return <LoadingState rows={7} />;
   if (metrics.error || transactions.error)
     return <ErrorState message={metrics.error ?? transactions.error ?? 'Error desconocido'} />;
   if (!metrics.data || !transactions.data) return null;
+
+  const isApiHealthy = health.data?.status === 'healthy';
+  const isReadinessReady = readiness.data?.status === 'ready';
 
   const cards = [
     {
@@ -76,7 +82,10 @@ export function Dashboard() {
         <div>
           <p className="eyebrow">Miércoles, 23 de septiembre</p>
           <h2>Buenas tardes, equipo de operaciones</h2>
-          <p>Visión consolidada de la actividad sintética del entorno local.</p>
+          <p>
+            Visión consolidada de la actividad sintética del entorno{' '}
+            {version.data?.environment ?? 'local'}.
+          </p>
         </div>
         <div className="live-indicator">
           <span />
@@ -220,7 +229,9 @@ export function Dashboard() {
               <span className="panel-kicker">Runtime</span>
               <h3>Estado de servicios</h3>
             </div>
-            <StatusBadge tone="success">Operational</StatusBadge>
+            <StatusBadge tone={isApiHealthy ? 'success' : 'danger'}>
+              {isApiHealthy ? 'Operational' : 'Degraded'}
+            </StatusBadge>
           </div>
           <div className="service-mini-list">
             <div>
@@ -232,24 +243,26 @@ export function Dashboard() {
             </div>
             <div>
               <span>
-                <i className="status-dot status-dot--success" />
+                <i className={`status-dot status-dot--${isApiHealthy ? 'success' : 'danger'}`} />
                 API
               </span>
-              <strong>Healthy</strong>
+              <strong>{isApiHealthy ? 'Healthy' : 'Offline'}</strong>
             </div>
             <div>
               <span>
-                <i className="status-dot status-dot--success" />
+                <i
+                  className={`status-dot status-dot--${isReadinessReady ? 'success' : 'danger'}`}
+                />
                 Readiness
               </span>
-              <strong>Ready</strong>
+              <strong>{isReadinessReady ? 'Ready' : 'Offline'}</strong>
             </div>
             <div>
               <span>
                 <i className="status-dot status-dot--info" />
                 Environment
               </span>
-              <strong>local</strong>
+              <strong>{version.data?.environment ?? 'local'}</strong>
             </div>
           </div>
         </article>
