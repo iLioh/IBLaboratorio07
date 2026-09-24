@@ -11,10 +11,12 @@ export function Services() {
   const version = useApi(api.getVersion);
   if (health.loading || readiness.loading || version.loading) return <LoadingState rows={5} />;
   const offline = health.data?.status !== 'healthy';
+  const isLocal = !version.data?.environment || version.data.environment === 'local';
+
   const services = [
     {
       name: 'Frontend',
-      detail: 'Vite development server',
+      detail: isLocal ? 'Vite development server' : 'React static build served by Express',
       state: 'Healthy',
       icon: Globe2,
       online: true,
@@ -41,13 +43,14 @@ export function Services() {
       online: Boolean(version.data),
     },
   ];
+
   return (
     <div className="page-stack">
       <section className="page-intro">
         <div>
           <p className="eyebrow">Live probes</p>
           <h2>Runtime services</h2>
-          <p>Estado observado directamente desde los endpoints locales de salud y preparación.</p>
+          <p>Estado observado directamente desde los endpoints de salud y preparación.</p>
         </div>
         <StatusBadge tone={offline ? 'danger' : 'success'}>
           {offline ? 'Degraded' : 'All operational'}
@@ -75,7 +78,11 @@ export function Services() {
       <article className="panel environment-panel">
         <div>
           <span className="panel-kicker">Current build</span>
-          <h3>Local environment metadata</h3>
+          <h3>
+            {version.data?.environment
+              ? `${version.data.environment.toUpperCase()} environment metadata`
+              : 'Runtime environment metadata'}
+          </h3>
         </div>
         <dl className="metadata-grid">
           <div>

@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import { api } from '../services/api';
 import { StatusBadge } from './StatusBadge';
 
 const items = [
@@ -30,7 +30,7 @@ const titles: Record<string, { title: string; eyebrow: string }> = {
   '/': { title: 'Operations Overview', eyebrow: 'Command center' },
   '/transactions': { title: 'Transactions', eyebrow: 'Operational ledger' },
   '/risk': { title: 'Risk Intelligence', eyebrow: 'Synthetic monitoring' },
-  '/services': { title: 'Service Health', eyebrow: 'Local runtime' },
+  '/services': { title: 'Service Health', eyebrow: 'Service probes' },
   '/releases': { title: 'Release Center', eyebrow: 'Build traceability' },
   '/audit': { title: 'Activity Log', eyebrow: 'Academic / Demo' },
 };
@@ -42,6 +42,10 @@ export function Layout() {
   const { data: version } = useApi(api.getVersion);
   const { data: health } = useApi(api.health);
   const isHealthy = health?.status === 'healthy';
+
+  const workspaceLabel = version?.environment
+    ? `${version.environment.toUpperCase()} workspace`
+    : 'Active workspace';
 
   return (
     <div className="app-shell">
@@ -74,7 +78,7 @@ export function Layout() {
         <div className="sidebar-note">
           <div className="pulse-dot" />
           <div>
-            <strong>Local workspace</strong>
+            <strong>{workspaceLabel}</strong>
             <span>Synthetic data only</span>
           </div>
         </div>
