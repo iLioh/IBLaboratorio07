@@ -2,7 +2,7 @@
 
 Aplicación full-stack académica para el **Laboratorio 07 de IT for Banking**. Presenta un centro interno de operaciones bancarias moderno, con datos 100 % sintéticos y trazabilidad de versión integrada en el pipeline CI/CD.
 
-> **Alcance actual:** producto containerizado v1.0.0 con CI completo. No es una plataforma bancaria productiva, no procesa operaciones reales y no representa cumplimiento regulatorio.
+> **Alcance actual:** producto containerizado v1.0.0 con CI completo y trazabilidad de runtime (Quality Hardening / Runtime Traceability). No es una plataforma bancaria productiva, no procesa operaciones reales y no representa cumplimiento regulatorio.
 
 ## Implementado
 
@@ -16,7 +16,7 @@ Aplicación full-stack académica para el **Laboratorio 07 de IT for Banking**. 
 - Datos sintéticos sin PII, clientes, cuentas ni tarjetas reales.
 - Metadata separada para aplicación, commit, build, pipeline y entorno.
 - TypeScript estricto, ESLint, Prettier, Vitest y Supertest.
-- Base de repositorio compatible con Git Flow (`main`, `develop`, `feature/*`).
+- Base de repositorio compatible con Git Flow (`main`, `develop`, `feature/*`, `fix/*`).
 
 ### Fase 3: Containerización de producción
 
@@ -29,15 +29,16 @@ Aplicación full-stack académica para el **Laboratorio 07 de IT for Banking**. 
 - **Usuario no-root** — el contenedor corre como `node`.
 - **`NODE_ENV=production`**, **`PORT=3000`**, escucha en `0.0.0.0`.
 
-### Fase 4A: CI con GitHub Actions
+### Fase 4A & Quality Hardening: CI & Runtime Traceability
 
+- **Fuente de verdad para versión:** El archivo `VERSION` es la fuente principal de `APP_VERSION`.
+- **Trazabilidad real de imagen Docker:** Soporte explícito de `CONTAINER_IMAGE` (`not-built` en dev local, `techbank:local` en Docker local, y `techbank:${GITHUB_SHA}` inmutable en CI).
+- **Entorno dinámico:** Adaptación de Release Center, Services y Dashboard según el entorno real (`local`, `container`, `ci`, `qa`).
 - **Workflow:** `.github/workflows/ci-cd.yml` — nombre: _TechBank CI/CD_.
 - **Triggers:** `push` y `pull_request` a `develop` y `main`.
 - **Job `quality`:** `npm ci` → `format:check` → `lint` → `test` → `build`.
-- **Job `docker`:** `docker build` → `docker run` → espera robusta con retry → smoke tests.
-- **Smoke tests:** `/health`, `/ready`, `/api/version`, `/` (HTML), `/api/not-found` (404).
-- **14 tests automatizados** (11 backend + 3 frontend).
-- **Pipeline v1.0.0** documentado en `docs/PIPELINE_CHANGELOG.md`.
+- **Job `docker`:** `docker build` → `docker run` → inspección de `HEALTHCHECK` (`healthy`) → smoke tests con validación estricta de metadata.
+- **Smoke tests:** `/health`, `/ready`, `/api/version`, `/api/releases`, `/` (HTML), `/api/not-found` (404).
 - **Permisos mínimos:** `contents: read` — sin Azure, sin secretos, sin registry push.
 
 ## Modos de operación
@@ -76,7 +77,7 @@ Express
 # Build
 docker build -t techbank:local .
 
-# Run (con metadata)
+# Run (con metadata de trazabilidad)
 docker run \
   --name techbank-local \
   -e APP_VERSION=v1.0.0 \
@@ -84,10 +85,11 @@ docker run \
   -e BUILD_TIME=local-build \
   -e PIPELINE_VERSION=v1.0.0 \
   -e APP_ENV=container \
+  -e CONTAINER_IMAGE=techbank:local \
   -p 3000:3000 \
   techbank:local
 
-# Verificar contenedor
+# Verificar contenedor y salud
 docker ps
 docker inspect techbank-local --format "{{json .State.Health}}"
 docker logs techbank-local
@@ -127,6 +129,7 @@ docs/
     └── ci-cd.yml
 Dockerfile
 .dockerignore
+.gitattributes
 VERSION
 ```
 
@@ -152,14 +155,15 @@ En Windows con una política de PowerShell restrictiva, usar `npm.cmd` en lugar 
 
 Copiar `.env.example` a `.env` únicamente si se desean cambiar los defaults locales:
 
-| Variable           | Default       | Propósito                                |
-| ------------------ | ------------- | ---------------------------------------- |
-| `APP_VERSION`      | `v1.0.0`      | Versión de aplicación                    |
-| `GIT_SHA`          | `local-dev`   | Commit del build                         |
-| `BUILD_TIME`       | `local-build` | Fecha/hora del build                     |
-| `PIPELINE_VERSION` | `v1.0.0`      | Versión del pipeline, separada de la app |
-| `APP_ENV`          | `local`       | Entorno visible                          |
-| `PORT`             | `3000`        | Puerto de la API                         |
+| Variable           | Default        | Propósito                                          |
+| ------------------ | -------------- | -------------------------------------------------- |
+| `APP_VERSION`      | (de `VERSION`) | Versión de aplicación                              |
+| `GIT_SHA`          | `local-dev`    | Commit del build                                   |
+| `BUILD_TIME`       | `local-build`  | Fecha/hora del build                               |
+| `PIPELINE_VERSION` | `v1.0.0`       | Versión del pipeline, separada de la app           |
+| `APP_ENV`          | `local`        | Entorno visible (`local`, `container`, `ci`, `qa`) |
+| `CONTAINER_IMAGE`  | `not-built`    | Nombre exacto de la imagen de contenedor           |
+| `PORT`             | `3000`         | Puerto de la API                                   |
 
 No se requieren ni deben agregarse secretos.
 
@@ -172,21 +176,21 @@ No se requieren ni deben agregarse secretos.
 | GET    | `/api/version`      | Metadata del build                 |
 | GET    | `/api/transactions` | Operaciones sintéticas             |
 | GET    | `/api/metrics`      | KPIs, series y alertas sintéticas  |
-| GET    | `/api/releases`     | Metadata del release               |
+| GET    | `/api/releases`     | Metadata del release y contenedor  |
 
 ## Comandos
 
 ```bash
 npm run dev          # web y API en paralelo
 npm run lint         # lint completo
-npm run test         # tests frontend y backend (14 tests)
+npm run test         # tests frontend y backend
 npm run build        # compila ambos workspaces
 npm run format:check # valida formato
 ```
 
 ## Estrategia de ramas
 
-El flujo previsto es `feature/* → pull request → develop → pull request → main`. El pipeline se activa automáticamente con `push` y `pull_request` hacia `develop` y `main`.
+El flujo previsto es `feature/*` / `fix/*` → pull request → `develop` → pull request → `main`. El pipeline se activa automáticamente con `push` y `pull_request` hacia `develop` y `main`.
 
 ## Roadmap — pendiente para siguientes ejecuciones
 
@@ -213,4 +217,4 @@ Todos los IDs, importes, métricas, alertas y eventos son ficticios. No hay PII,
 
 ## Objetivo académico
 
-Esta fase demuestra el ciclo Source → CI → Docker → Smoke Tests con un pipeline v1.0.0 completamente funcional. Las fases posteriores añadirán seguridad DevSecOps, despliegue Azure y observabilidad cloud.
+Esta fase demuestra el ciclo Source → CI → Docker → Smoke Tests con trazabilidad real de contenedores y metadatos de runtime. Las fases posteriores añadirán seguridad DevSecOps, despliegue Azure y observabilidad cloud.
