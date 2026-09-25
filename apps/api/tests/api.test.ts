@@ -2,6 +2,8 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
 
+const expectedPipelineVersion = process.env.PIPELINE_VERSION ?? 'v1.0.0';
+
 describe('TechBank API', () => {
   it('GET /health returns 200 and status ok', async () => {
     const response = await request(app).get('/health');
@@ -22,7 +24,7 @@ describe('TechBank API', () => {
       appVersion: 'v1.0.0',
       gitSha: expect.any(String),
       buildTime: expect.any(String),
-      pipelineVersion: 'v1.0.0',
+      pipelineVersion: expectedPipelineVersion,
       environment: expect.any(String),
     });
   });
@@ -52,7 +54,7 @@ describe('TechBank API', () => {
       appVersion: 'v1.0.0',
       gitSha: expect.any(String),
       buildTime: expect.any(String),
-      pipelineVersion: 'v1.0.0',
+      pipelineVersion: expectedPipelineVersion,
       environment: expect.any(String),
       containerImage: expect.any(String),
       releaseStatus: expect.any(String),
