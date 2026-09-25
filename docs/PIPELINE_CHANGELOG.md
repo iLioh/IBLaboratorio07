@@ -2,13 +2,13 @@
 
 ## v1.1.0 — 2026-09-24
 
-Pipeline de despliegue automático QA para TechBank Operations Center. Esta versión está implementada como código y queda pendiente de su primera ejecución exitosa desde `develop` para producir evidencia de despliegue.
+Pipeline de despliegue automático QA para TechBank Operations Center. GitHub Actions run #14 finalizó correctamente desde `develop` y produjo evidencia real de Quality Gate, Docker smoke tests, ACR push, OIDC y deploy QA.
 
 ### Implementado
 
 - **Azure Container Registry (ACR)** — imagen inmutable por SHA de commit: `acrtechbanks7brazilsouth.azurecr.io/techbank:<sha>`
 - **Push automático a ACR** — solo en push/merge a `develop`, nunca en Pull Requests.
-- **Deploy automático a Azure Container Apps** — el job crea el entorno QA público con ingress externo en `brazilsouth` durante el primer run y actualiza la imagen posteriormente.
+- **Deploy automático a Azure Container Apps** — `ca-techbank-s7-qa` fue creada con ingress externo en `brazilsouth` y se actualiza en los siguientes deploys.
 - **Imagen trazable por SHA** — `CONTAINER_IMAGE` inyectada con el nombre exacto de la imagen desplegada.
 - **Inyección de metadata de despliegue** — `APP_ENV=qa`, `PIPELINE_VERSION=v1.1.0`, `GIT_SHA`, `BUILD_TIME`, `APP_VERSION`.
 - **Remote smoke tests** — validan `/health`, `/ready`, `/api/version` (environment=qa, pipelineVersion), `/api/releases` (releaseStatus=QA Environment), y `/` (HTTP 200) contra la URL real de Azure.
@@ -35,12 +35,12 @@ Remote smoke: /health /ready /api/version /api/releases /  [Remote Validation]
 
 ### Recursos Azure
 
-| Recurso            | Nombre                                        | Región       |
-| ------------------ | --------------------------------------------- | ------------ |
-| Resource Group     | rg-techbank-brazilsouth                       | Brazil South |
-| Container Registry | acrtechbanks7brazilsouth                      | Brazil South |
-| Container Apps Env | cae-techbank-s7-qa                            | Brazil South |
-| Container App      | ca-techbank-s7-qa _(pendiente primer deploy)_ | Brazil South |
+| Recurso            | Nombre                      | Región       |
+| ------------------ | --------------------------- | ------------ |
+| Resource Group     | rg-techbank-brazilsouth     | Brazil South |
+| Container Registry | acrtechbanks7brazilsouth    | Brazil South |
+| Container Apps Env | cae-techbank-s7-qa          | Brazil South |
+| Container App      | ca-techbank-s7-qa (Running) | Brazil South |
 
 > **Nota:** `eastus` y `centralus` fueron rechazados por política de la suscripción Azure for Students (UTP).
 > Se utilizó `brazilsouth` que sí fue autorizado por la política de la suscripción.
@@ -70,7 +70,16 @@ Ver `docs/evidence/qa/README.md` para instrucciones de configuración.
 
 - `contents: read` — mínimo privilegio para el workflow.
 - `id-token: write` — concedido solo al job `deploy-qa` para intercambiar el token OIDC temporal con Azure.
-- Azure Login usa la User Assigned Managed Identity `id-techbank-s7-github`, sin client secret. La credencial federada acepta únicamente `repo:iLioh/IBLaboratorio07:ref:refs/heads/develop` emitido por `https://token.actions.githubusercontent.com`.
+- Azure Login usa la User Assigned Managed Identity `id-techbank-s7-github`, sin client secret. La credencial federada acepta únicamente `repo:iLioh@108911528/IBLaboratorio07@1384369787:ref:refs/heads/develop` emitido por `https://token.actions.githubusercontent.com`.
+
+### Deployment QA verificado
+
+| Campo             | Valor                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| URL QA            | `https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io` |
+| Commit desplegado | `8f60360a51aac04dbf4425a6c7584a40bec274e8`                                              |
+| Aplicación        | v1.0.0                                                                                  |
+| Pipeline          | v1.1.0                                                                                  |
 
 ### Deliberadamente excluido (próximas versiones)
 
