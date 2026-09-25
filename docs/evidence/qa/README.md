@@ -105,24 +105,29 @@ Valor: <password del admin del ACR>
 
 Obtener de: Azure Portal → Container Registries → `acrtechbanks7brazilsouth` → Access keys → password
 
-### Secret 3: `AZURE_CREDENTIALS`
+### Secret 3: `AZURE_CLIENT_ID`
 
-Crear un Service Principal con acceso limitado al Resource Group:
+Client ID de la User Assigned Managed Identity `id-techbank-s7-github`.
 
-```bash
-SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
-az ad sp create-for-rbac \
-  --name "techbank-github-actions" \
-  --role Contributor \
-  --scopes "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-techbank-brazilsouth" \
-  --sdk-auth
+### Secret 4: `AZURE_TENANT_ID`
+
+Tenant ID de Azure correspondiente a la federación OIDC.
+
+### Secret 5: `AZURE_SUBSCRIPTION_ID`
+
+Subscription ID que contiene `rg-techbank-brazilsouth`.
+
+### Azure Login con OIDC
+
+El job `deploy-qa` recibe un token OIDC temporal de GitHub Actions y Azure lo intercambia mediante la User Assigned Managed Identity `id-techbank-s7-github`. No existe client secret ni JSON de credenciales estáticas para el login de Azure.
+
+La credencial federada restringe la confianza a:
+
+```text
+issuer:   https://token.actions.githubusercontent.com
+audience: api://AzureADTokenExchange
+subject:  repo:iLioh/IBLaboratorio07:ref:refs/heads/develop
 ```
-
-> **Nota:** Este comando requiere permisos de directorio. Si falla con error de permisos,
-> solicitar al administrador del tenant (UTP) que lo ejecute, o usar la Azure Portal
-> para crear el Service Principal manualmente.
-
-El JSON resultante debe pegarse completo como valor del secret `AZURE_CREDENTIALS`.
 
 ---
 
@@ -140,12 +145,12 @@ https://<qa-fqdn>
 
 ## Estado de implementación
 
-| Componente                                      | Estado                                                       |
-| ----------------------------------------------- | ------------------------------------------------------------ |
-| Resource Group `rg-techbank-brazilsouth`        | ✅ CONFIGURADO EN AZURE                                      |
-| ACR `acrtechbanks7brazilsouth`                  | ✅ CONFIGURADO EN AZURE                                      |
-| Container Apps Environment `cae-techbank-s7-qa` | ✅ CONFIGURADO EN AZURE                                      |
-| Container App `ca-techbank-s7-qa`               | ⏳ SE CREA EN PRIMER PIPELINE RUN                            |
-| Pipeline v1.1.0 con deploy QA                   | ✅ IMPLEMENTADO EN CÓDIGO                                    |
-| GitHub Secrets                                  | ⚠️ REQUIERE INTERVENCIÓN MANUAL                              |
-| OIDC / Federated Credentials                    | ⚠️ BLOQUEADO — requiere permisos de directorio en tenant UTP |
+| Componente                                      | Estado                                       |
+| ----------------------------------------------- | -------------------------------------------- |
+| Resource Group `rg-techbank-brazilsouth`        | ✅ CONFIGURADO EN AZURE                      |
+| ACR `acrtechbanks7brazilsouth`                  | ✅ CONFIGURADO EN AZURE                      |
+| Container Apps Environment `cae-techbank-s7-qa` | ✅ CONFIGURADO EN AZURE                      |
+| Container App `ca-techbank-s7-qa`               | ⏳ SE CREA EN PRIMER PIPELINE RUN            |
+| Pipeline v1.1.0 con deploy QA                   | ✅ IMPLEMENTADO EN CÓDIGO                    |
+| GitHub Secrets                                  | ✅ CINCO SECRETS REQUERIDOS PARA EL WORKFLOW |
+| OIDC / Federated Credentials                    | ✅ CONFIGURADO PARA `develop`                |

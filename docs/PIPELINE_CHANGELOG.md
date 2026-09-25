@@ -47,11 +47,13 @@ Remote smoke: /health /ready /api/version /api/releases /  [Remote Validation]
 
 ### Secrets requeridos en GitHub
 
-| Secret              | Descripción                                                             |
-| ------------------- | ----------------------------------------------------------------------- |
-| `ACR_USERNAME`      | Usuario admin del ACR (obtenido de Azure Portal)                        |
-| `ACR_PASSWORD`      | Password admin del ACR (obtenido de Azure Portal)                       |
-| `AZURE_CREDENTIALS` | JSON de Service Principal con rol `Contributor` sobre el Resource Group |
+| Secret                  | Descripción                                       |
+| ----------------------- | ------------------------------------------------- |
+| `ACR_USERNAME`          | Usuario admin del ACR (obtenido de Azure Portal)  |
+| `ACR_PASSWORD`          | Password admin del ACR (obtenido de Azure Portal) |
+| `AZURE_CLIENT_ID`       | Client ID de la User Assigned Managed Identity    |
+| `AZURE_TENANT_ID`       | Tenant ID usado por Azure Login OIDC              |
+| `AZURE_SUBSCRIPTION_ID` | Subscription ID usada por el deployment QA        |
 
 Ver `docs/evidence/qa/README.md` para instrucciones de configuración.
 
@@ -66,13 +68,13 @@ Ver `docs/evidence/qa/README.md` para instrucciones de configuración.
 
 ### Permisos aplicados
 
-- `contents: read` — mínimo privilegio.
-- Sin OIDC en esta versión — la suscripción Azure for Students (UTP) no permite crear App Registrations ni federated credentials sin permisos de directorio. Se usa Service Principal con client secret en lugar de OIDC.
-- **Próxima versión:** migrar a OIDC/federated credentials cuando se obtenga permiso de directorio del tenant.
+- `contents: read` — mínimo privilegio para el workflow.
+- `id-token: write` — concedido solo al job `deploy-qa` para intercambiar el token OIDC temporal con Azure.
+- Azure Login usa la User Assigned Managed Identity `id-techbank-s7-github`, sin client secret. La credencial federada acepta únicamente `repo:iLioh/IBLaboratorio07:ref:refs/heads/develop` emitido por `https://token.actions.githubusercontent.com`.
 
 ### Deliberadamente excluido (próximas versiones)
 
-- **v1.2.0 (DevSecOps):** CodeQL · Gitleaks · Trivy · SBOM · Dependabot · OIDC
+- **v1.2.0 (DevSecOps):** CodeQL · Gitleaks · Trivy · SBOM · Dependabot
 - **v1.3.0 (Observabilidad):** Application Insights · Log Analytics · Azure Monitor
 - **v1.4.0 (Resiliencia):** k6 · canary deployment · rollback · blue/green
 

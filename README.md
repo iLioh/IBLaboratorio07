@@ -84,13 +84,17 @@ QA público: URL publicada por el primer deploy exitoso
 
 Los siguientes secrets deben configurarse en **GitHub → Repository Settings → Secrets and variables → Actions** para que el job `deploy-qa` funcione:
 
-| Secret              | Descripción                                                              |
-| ------------------- | ------------------------------------------------------------------------ |
-| `ACR_USERNAME`      | `acrtechbanks7brazilsouth` (usuario admin del ACR)                       |
-| `ACR_PASSWORD`      | Password del admin del ACR (Azure Portal → ACR → Access keys)            |
-| `AZURE_CREDENTIALS` | JSON del Service Principal con rol `Contributor` sobre el Resource Group |
+| Secret                  | Descripción                                                      |
+| ----------------------- | ---------------------------------------------------------------- |
+| `ACR_USERNAME`          | `acrtechbanks7brazilsouth` (usuario admin del ACR)               |
+| `ACR_PASSWORD`          | Password del admin del ACR (Azure Portal → ACR → Access keys)    |
+| `AZURE_CLIENT_ID`       | Client ID de la User Assigned Managed Identity de GitHub Actions |
+| `AZURE_TENANT_ID`       | Tenant ID de Azure para la federación OIDC                       |
+| `AZURE_SUBSCRIPTION_ID` | Subscription ID de Azure para el deployment QA                   |
 
-Ver `docs/evidence/qa/README.md` para instrucciones completas de configuración.
+Azure Login usa OIDC con un token temporal emitido por GitHub Actions; no se usa ni se almacena un client secret. Azure acepta únicamente el subject `repo:iLioh/IBLaboratorio07:ref:refs/heads/develop` de `https://token.actions.githubusercontent.com`.
+
+Ver `docs/evidence/qa/README.md` para la configuración y evidencias académicas.
 
 ## Trigger de despliegue
 
@@ -247,7 +251,7 @@ npm run format:check # valida formato
 
 El flujo previsto es `feature/*` / `fix/*` → pull request → `develop` → pull request → `main`. El pipeline se activa automáticamente con `push` y `pull_request` hacia `develop` y `main`.
 
-El deploy QA se activa únicamente en `push` a `develop`. Antes del primer run deben existir los tres secrets documentados; la evidencia del despliegue se captura después de que el job termine en verde.
+El deploy QA se activa únicamente en `push` a `develop`. Antes del primer run deben existir los cinco secrets documentados; la evidencia del despliegue se captura después de que el job termine en verde.
 
 ## Datos y limitaciones
 
