@@ -2,7 +2,7 @@
 
 Aplicación full-stack académica para el **Laboratorio 07 de IT for Banking**. Presenta un centro interno de operaciones bancarias moderno, con datos 100 % sintéticos y trazabilidad de versión integrada en el pipeline CI/CD.
 
-> **Alcance actual:** producto containerizado v1.0.0 con CI completo y trazabilidad de runtime. El pipeline v1.1.0 añade el flujo de despliegue automático a QA en Azure; queda pendiente su primera ejecución exitosa desde `develop` para crear la Container App y publicar la URL QA. No es una plataforma bancaria productiva, no procesa operaciones reales y no representa cumplimiento regulatorio.
+> **Alcance actual:** producto containerizado v1.0.0 con CI/CD y trazabilidad de runtime. El pipeline v1.1.0 desplegó correctamente QA desde `develop` mediante OIDC. No es una plataforma bancaria productiva, no procesa operaciones reales y no representa cumplimiento regulatorio.
 
 ## Implementado
 
@@ -40,11 +40,11 @@ Aplicación full-stack académica para el **Laboratorio 07 de IT for Banking**. 
 - **Job `docker`:** `docker build` → `docker run` → inspección de `HEALTHCHECK` (`healthy`) → smoke tests con validación estricta de metadata.
 - **Smoke tests:** `/health`, `/ready`, `/api/version`, `/api/releases`, `/` (HTML), `/api/not-found` (404).
 
-### Fase 3 QA (Pipeline v1.1.0): Despliegue automático a Azure, preparado para validación
+### Fase 3 QA (Pipeline v1.1.0): Despliegue automático a Azure, validado
 
 - **Azure Container Registry (ACR):** `acrtechbanks7brazilsouth.azurecr.io` (Brazil South).
 - **Imagen inmutable por SHA:** `acrtechbanks7brazilsouth.azurecr.io/techbank:<GITHUB_SHA>`.
-- **Azure Container Apps:** el job crea `ca-techbank-s7-qa` con ingress externo y escalado automático (min 1 / max 3 réplicas) en su primer despliegue; en ejecuciones siguientes actualiza la imagen.
+- **Azure Container Apps:** `ca-techbank-s7-qa` está desplegada con ingress externo y escalado automático (min 1 / max 3 réplicas).
 - **Deploy solo en `develop`:** Pull Requests solo corren Quality Gate + Docker validation. No despliegan a Azure.
 - **Remote smoke tests:** pipeline valida `/health`, `/ready`, `/api/version` (environment=qa), `/api/releases` (releaseStatus=QA Environment) y `/` (HTML 200) contra la URL pública real.
 - **`CONTAINER_IMAGE` trazable:** el endpoint `/api/releases` retorna exactamente la imagen ACR desplegada.
@@ -66,17 +66,17 @@ Azure Container Apps Deploy (ca-techbank-s7-qa)
         ↓
 Remote Smoke Tests (/health · /ready · /api/version · /api/releases · /)
         ↓
-QA público: URL publicada por el primer deploy exitoso
+QA público: https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io
 ```
 
 ## Recursos Azure
 
-| Recurso                    | Nombre                                            | Región       |
-| -------------------------- | ------------------------------------------------- | ------------ |
-| Resource Group             | rg-techbank-brazilsouth                           | Brazil South |
-| Azure Container Registry   | acrtechbanks7brazilsouth                          | Brazil South |
-| Container Apps Environment | cae-techbank-s7-qa                                | Brazil South |
-| Container App              | ca-techbank-s7-qa _(se crea en el primer deploy)_ | Brazil South |
+| Recurso                    | Nombre                      | Región       |
+| -------------------------- | --------------------------- | ------------ |
+| Resource Group             | rg-techbank-brazilsouth     | Brazil South |
+| Azure Container Registry   | acrtechbanks7brazilsouth    | Brazil South |
+| Container Apps Environment | cae-techbank-s7-qa          | Brazil South |
+| Container App              | ca-techbank-s7-qa (Running) | Brazil South |
 
 > **Nota:** `eastus` y `centralus` fueron rechazados por política de la suscripción Azure for Students (UTP). Se utiliza `brazilsouth` autorizado por la política de la suscripción.
 
@@ -92,7 +92,7 @@ Los siguientes secrets deben configurarse en **GitHub → Repository Settings �
 | `AZURE_TENANT_ID`       | Tenant ID de Azure para la federación OIDC                       |
 | `AZURE_SUBSCRIPTION_ID` | Subscription ID de Azure para el deployment QA                   |
 
-Azure Login usa OIDC con un token temporal emitido por GitHub Actions; no se usa ni se almacena un client secret. Azure acepta únicamente el subject `repo:iLioh/IBLaboratorio07:ref:refs/heads/develop` de `https://token.actions.githubusercontent.com`.
+Azure Login usa OIDC con un token temporal emitido por GitHub Actions; no se usa ni se almacena un client secret. Azure acepta únicamente el subject `repo:iLioh@108911528/IBLaboratorio07@1384369787:ref:refs/heads/develop` de `https://token.actions.githubusercontent.com`.
 
 Ver `docs/evidence/qa/README.md` para la configuración y evidencias académicas.
 
@@ -153,12 +153,12 @@ docker run \
   techbank:local
 ```
 
-### QA — Azure Container Apps (después del primer deploy exitoso)
+### QA — Azure Container Apps
 
-La imagen será desplegada automáticamente por el pipeline al hacer push/merge a `develop`, una vez configurados los secrets requeridos. El job imprimirá la URL pública real en su resumen.
+El pipeline v1.1.0 desplegó correctamente el commit `8f60360a51aac04dbf4425a6c7584a40bec274e8` con App v1.0.0. Los siguientes pushes a `develop` actualizan QA automáticamente después de Quality Gate y Docker smoke tests.
 
 ```
-https://ca-techbank-s7-qa.<environment-domain>.brazilsouth.azurecontainerapps.io
+https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io
 ```
 
 Endpoints de validación:
@@ -170,17 +170,17 @@ Endpoints de validación:
 
 ## Stack
 
-| Capa      | Tecnología                                                         |
-| --------- | ------------------------------------------------------------------ |
-| Web       | React 19, TypeScript, Vite, React Router, Recharts, Lucide         |
-| API       | Node.js 24 LTS, TypeScript, Express 5                              |
-| Tests     | Vitest, Testing Library, Supertest                                 |
-| Calidad   | ESLint, Prettier, TypeScript strict                                |
-| Datos     | Archivos TypeScript, exclusivamente sintéticos                     |
-| Container | Docker multi-stage, Node.js 24 Alpine, usuario no-root             |
-| Registry  | Azure Container Registry (Brazil South)                            |
-| Deploy    | Azure Container Apps QA (workflow preparado; pendiente primer run) |
-| CI/CD     | GitHub Actions — pipeline v1.1.0                                   |
+| Capa      | Tecnología                                                 |
+| --------- | ---------------------------------------------------------- |
+| Web       | React 19, TypeScript, Vite, React Router, Recharts, Lucide |
+| API       | Node.js 24 LTS, TypeScript, Express 5                      |
+| Tests     | Vitest, Testing Library, Supertest                         |
+| Calidad   | ESLint, Prettier, TypeScript strict                        |
+| Datos     | Archivos TypeScript, exclusivamente sintéticos             |
+| Container | Docker multi-stage, Node.js 24 Alpine, usuario no-root     |
+| Registry  | Azure Container Registry (Brazil South)                    |
+| Deploy    | Azure Container Apps QA (deployment validado)              |
+| CI/CD     | GitHub Actions — pipeline v1.1.0                           |
 
 ## Estructura
 
@@ -251,7 +251,7 @@ npm run format:check # valida formato
 
 El flujo previsto es `feature/*` / `fix/*` → pull request → `develop` → pull request → `main`. El pipeline se activa automáticamente con `push` y `pull_request` hacia `develop` y `main`.
 
-El deploy QA se activa únicamente en `push` a `develop`. Antes del primer run deben existir los cinco secrets documentados; la evidencia del despliegue se captura después de que el job termine en verde.
+El deploy QA se activa únicamente en `push` a `develop`. El primer run QA ya finalizó en verde; los cinco secrets documentados continúan siendo necesarios para deploys posteriores.
 
 ## Datos y limitaciones
 
@@ -259,4 +259,4 @@ Todos los IDs, importes, métricas, alertas y eventos son ficticios. No hay PII,
 
 ## Objetivo académico
 
-Esta fase deja implementado como código el ciclo Source → CI → Docker → ACR → Azure Container Apps → Remote Smoke Tests. La evidencia de ejecución real se incorporará después del primer deploy QA exitoso. Las fases posteriores añadirán DevSecOps y observabilidad cloud.
+Esta fase demuestra el ciclo Source → CI → Docker → ACR → Azure Container Apps → Remote Smoke Tests con evidencia de un deployment QA exitoso. La evaluación de escalabilidad académica está documentada en `docs/scalability/scalability-report.md`.

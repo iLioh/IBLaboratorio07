@@ -8,12 +8,14 @@ El alumno debe capturar las siguientes pantallas / evidencias reales después de
 
 ## Recursos Azure creados
 
-| #   | Recurso                    | Nombre                   | Región       | Estado                     |
-| --- | -------------------------- | ------------------------ | ------------ | -------------------------- |
-| 1   | Resource Group             | rg-techbank-brazilsouth  | Brazil South | ✅ Creado                  |
-| 2   | Azure Container Registry   | acrtechbanks7brazilsouth | Brazil South | ✅ Creado                  |
-| 3   | Container Apps Environment | cae-techbank-s7-qa       | Brazil South | ✅ Creado                  |
-| 4   | Container App              | ca-techbank-s7-qa        | Brazil South | ⏳ Pendiente primer deploy |
+| #   | Recurso                    | Nombre                   | Región       | Estado     |
+| --- | -------------------------- | ------------------------ | ------------ | ---------- |
+| 1   | Resource Group             | rg-techbank-brazilsouth  | Brazil South | ✅ Creado  |
+| 2   | Azure Container Registry   | acrtechbanks7brazilsouth | Brazil South | ✅ Creado  |
+| 3   | Container Apps Environment | cae-techbank-s7-qa       | Brazil South | ✅ Creado  |
+| 4   | Container App              | ca-techbank-s7-qa        | Brazil South | ✅ Running |
+
+El deployment QA fue validado por GitHub Actions run #14 con App v1.0.0, Pipeline v1.1.0 y commit `8f60360a51aac04dbf4425a6c7584a40bec274e8`.
 
 ---
 
@@ -81,6 +83,23 @@ El alumno debe capturar las siguientes pantallas / evidencias reales después de
 - **Mostrar:** todos los steps en verde, incluyendo remote smoke tests
 - **Archivo sugerido:** `09-github-actions-deploy-green.png`
 
+## Capturas finales requeridas
+
+Guardar las capturas manuales en este directorio con estos nombres. No se incluyen imágenes generadas ni placeholders.
+
+| Archivo                                | Qué debe mostrar                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `01-github-actions-deploy-success.png` | Run #14 terminado en verde.                                                                             |
+| `02-github-actions-deploy-steps.png`   | Job Deploy QA y sus pasos OIDC, ACR y smoke tests en verde.                                             |
+| `03-azure-container-app-overview.png`  | Overview de `ca-techbank-s7-qa`: Running, región y FQDN.                                                |
+| `04-azure-container-app-replicas.png`  | Réplicas/revisión activa y configuración min 1, max 3.                                                  |
+| `05-acr-techbank-image.png`            | Repositorio `techbank` y tag SHA en ACR.                                                                |
+| `06-qa-web-running.png`                | Dashboard TechBank en la URL QA pública.                                                                |
+| `07-qa-health.png`                     | Respuesta 200 de `/health`.                                                                             |
+| `08-qa-version.png`                    | Metadata de `/api/version` con App v1.0.0 y Pipeline v1.1.0.                                            |
+| `09-k6-results.png`                    | El resumen final de `k6-output.txt`: 1227 requests, 0.00 % fallos, p95 613.09 ms y thresholds en verde. |
+| `10-scaling-replicas.png`              | Azure Portal o CLI con la revisión activa y las muestras `1 → 3`; indicar que se observó autoscaling.   |
+
 ---
 
 ## Configuración de GitHub Secrets (paso manual requerido)
@@ -126,20 +145,20 @@ La credencial federada restringe la confianza a:
 ```text
 issuer:   https://token.actions.githubusercontent.com
 audience: api://AzureADTokenExchange
-subject:  repo:iLioh/IBLaboratorio07:ref:refs/heads/develop
+subject:  repo:iLioh@108911528/IBLaboratorio07@1384369787:ref:refs/heads/develop
 ```
 
 ---
 
 ## URL QA
 
-Una vez desplegado, la URL tendrá formato:
+URL QA verificada:
 
 ```
-https://<qa-fqdn>
+https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io
 ```
 
-> La URL exacta se imprime al final del job `Deploy QA` en GitHub Actions.
+La revisión activa usa la imagen `acrtechbanks7brazilsouth.azurecr.io/techbank:8f60360a51aac04dbf4425a6c7584a40bec274e8`.
 
 ---
 
@@ -150,7 +169,9 @@ https://<qa-fqdn>
 | Resource Group `rg-techbank-brazilsouth`        | ✅ CONFIGURADO EN AZURE                      |
 | ACR `acrtechbanks7brazilsouth`                  | ✅ CONFIGURADO EN AZURE                      |
 | Container Apps Environment `cae-techbank-s7-qa` | ✅ CONFIGURADO EN AZURE                      |
-| Container App `ca-techbank-s7-qa`               | ⏳ SE CREA EN PRIMER PIPELINE RUN            |
-| Pipeline v1.1.0 con deploy QA                   | ✅ IMPLEMENTADO EN CÓDIGO                    |
+| Container App `ca-techbank-s7-qa`               | ✅ RUNNING Y HEALTHY                         |
+| Pipeline v1.1.0 con deploy QA                   | ✅ EJECUTADO CORRECTAMENTE EN RUN #14        |
 | GitHub Secrets                                  | ✅ CINCO SECRETS REQUERIDOS PARA EL WORKFLOW |
 | OIDC / Federated Credentials                    | ✅ CONFIGURADO PARA `develop`                |
+| Prueba k6 moderada                              | ✅ 1227 REQUESTS, THRESHOLDS APROBADOS       |
+| Autoscaling horizontal                          | ✅ OBSERVADO: 1 → 3 RÉPLICAS                 |
