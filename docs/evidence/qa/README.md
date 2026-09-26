@@ -15,7 +15,7 @@ El alumno debe capturar las siguientes pantallas / evidencias reales después de
 | 3   | Container Apps Environment | cae-techbank-s7-qa       | Brazil South | ✅ Creado  |
 | 4   | Container App              | ca-techbank-s7-qa        | Brazil South | ✅ Running |
 
-El deployment QA fue validado por GitHub Actions run #14 con App v1.0.0, Pipeline v1.1.0 y commit `8f60360a51aac04dbf4425a6c7584a40bec274e8`.
+El deployment final de referencia fue validado exitosamente en GitHub Actions run #16. En ese run se desplegó la imagen asociada al commit `7d6216d1053596e0b4770ad0b0507ec99229b516`, con App v1.0.0, Pipeline v1.1.0 y entorno QA. Quality Gate, Docker Build & Smoke Test, Deploy QA y los smoke tests remotos finalizaron correctamente.
 
 ---
 
@@ -158,7 +158,7 @@ URL QA verificada:
 https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io
 ```
 
-La revisión activa usa la imagen `acrtechbanks7brazilsouth.azurecr.io/techbank:8f60360a51aac04dbf4425a6c7584a40bec274e8`.
+En run #16 se desplegó la imagen `acrtechbanks7brazilsouth.azurecr.io/techbank:7d6216d1053596e0b4770ad0b0507ec99229b516`.
 
 ---
 
@@ -170,7 +170,7 @@ La revisión activa usa la imagen `acrtechbanks7brazilsouth.azurecr.io/techbank:
 | ACR `acrtechbanks7brazilsouth`                  | ✅ CONFIGURADO EN AZURE                      |
 | Container Apps Environment `cae-techbank-s7-qa` | ✅ CONFIGURADO EN AZURE                      |
 | Container App `ca-techbank-s7-qa`               | ✅ RUNNING Y HEALTHY                         |
-| Pipeline v1.1.0 con deploy QA                   | ✅ EJECUTADO CORRECTAMENTE EN RUN #14        |
+| Pipeline v1.1.0 con deploy QA                   | ✅ EVIDENCIA FINAL: RUN #16                  |
 | GitHub Secrets                                  | ✅ CINCO SECRETS REQUERIDOS PARA EL WORKFLOW |
 | OIDC / Federated Credentials                    | ✅ CONFIGURADO PARA `develop`                |
 | Prueba k6 moderada                              | ✅ 1227 REQUESTS, THRESHOLDS APROBADOS       |

@@ -155,7 +155,7 @@ docker run \
 
 ### QA — Azure Container Apps
 
-El pipeline v1.1.0 desplegó correctamente el commit `8f60360a51aac04dbf4425a6c7584a40bec274e8` con App v1.0.0. Los siguientes pushes a `develop` actualizan QA automáticamente después de Quality Gate y Docker smoke tests.
+El deployment final de referencia fue validado exitosamente en GitHub Actions run #16. En ese run se desplegó la imagen asociada al commit `7d6216d1053596e0b4770ad0b0507ec99229b516`, con App v1.0.0, Pipeline v1.1.0 y entorno QA. Los siguientes pushes a `develop` actualizan QA automáticamente después de Quality Gate y Docker smoke tests.
 
 ```
 https://ca-techbank-s7-qa.victoriousdesert-e29e6577.brazilsouth.azurecontainerapps.io
