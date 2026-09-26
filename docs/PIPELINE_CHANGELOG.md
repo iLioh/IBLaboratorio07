@@ -16,6 +16,7 @@ Pipeline de despliegue automático QA para TechBank Operations Center. GitHub Ac
   - Pull Request → Quality Gate + Docker validation (sin deploy Azure)
   - Push a `develop` → Quality Gate + Docker validation + ACR push + Deploy QA + Remote smoke test
 - **Autoscaling QA** — el workflow configura min 1 réplica y max 3 réplicas en la Container App.
+- **Escalabilidad QA validada posteriormente** — una prueba k6 real (v2.2.0) ejecutó 1227 requests a 20.049006 req/s, con p95 de 613.09 ms, 0.00 % de errores y autoscaling horizontal observado de 1 a 3 réplicas.
 
 ### Arquitectura del pipeline v1.1.0
 
@@ -85,7 +86,7 @@ Ver `docs/evidence/qa/README.md` para instrucciones de configuración.
 
 - **v1.2.0 (DevSecOps):** CodeQL · Gitleaks · Trivy · SBOM · Dependabot
 - **v1.3.0 (Observabilidad):** Application Insights · Log Analytics · Azure Monitor
-- **v1.4.0 (Resiliencia):** k6 · canary deployment · rollback · blue/green
+- **v1.4.0 (Resiliencia):** canary deployment · rollback · blue/green
 
 ---
 
